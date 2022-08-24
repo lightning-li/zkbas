@@ -1,0 +1,22 @@
+Name: appService-api
+Host: 0.0.0.0
+Port: 8888
+Postgres:
+  DataSource: host=postgres user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
+
+CacheRedis:
+  - Host: zkbasredis:6379
+    Type: node
+
+GlobalRpc:
+  Endpoints:
+    - 127.0.0.1:8080
+
+LogConf:
+  ServiceName: appservice
+  Mode: console
+  Path: ./log/appService
+  StackCooldownMillis: 500
+
+TreeDB:
+  Driver: memorydb
