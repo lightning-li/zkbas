@@ -1,0 +1,75 @@
+version: '3'
+
+services:
+  prover:
+    volumes:
+      - "./service/cronjob/prover:/code"
+    depends_on:
+      - postgres
+      - redis
+      - crypto
+
+  witness:
+    volumes:
+      - "./service/cronjob/witnessGenerator:/code"
+    depends_on:
+      - postgres
+      - redis
+      - crypto
+
+  monitor:
+    volumes:
+      - "./service/cronjob/monitor:/code"
+    depends_on:
+      - postgres
+      - redis
+      - crypto
+
+  committer:
+    volumes:
+      - "./service/cronjob/committer:/code"
+    depends_on:
+      - postgres
+      - redis
+      - crypto
+
+  sender:
+    volumes:
+      - "./service/cronjob/sender:/code"
+    depends_on:
+      - postgres
+      - redis
+      - crypto
+
+  app:
+    volumes:
+      - "./service/api/app:/code"
+    ports:
+      - "8888:8888"
+    depends_on:
+      - postgres
+      - redis
+      - crypto
+
+  postgres:
+    image: postgres:latest
+    restart: always
+    volumes:
+      - "/home/.zkbas/postgresql:/var/lib/postgresql"
+    ports:
+      - "5432:5432"
+    environment:
+      - "POSTGRES_USER=postgres"
+      - "POSTGRES_PASSWORD=Zkbas@123"
+      - "POSTGRES_DB=zkbas"
+  zkbasredis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+  crypto:
+    image: zkbas-crypto:latest
+    volumes:
+      - "/home/.zkbas:/data"
