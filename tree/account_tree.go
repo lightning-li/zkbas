@@ -19,9 +19,9 @@ package tree
 
 import (
 	"errors"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"strconv"
 
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	bsmt "github.com/bnb-chain/zkbnb-smt"
@@ -54,7 +54,7 @@ func InitAccountTree(
 
 	// init account state trees
 	accountAssetTrees = NewLazyTreeCache(assetCacheSize, accountNums-1, blockHeight, func(index, block int64) bsmt.SparseMerkleTree {
-		tree, err := bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(mimc.NewMiMC()),
+		tree, err := bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(poseidon.NewPoseidon()),
 			SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, NilAccountAssetNodeHash,
 			ctx.Options(block)...)
 		if err != nil {
@@ -63,7 +63,7 @@ func InitAccountTree(
 		}
 		return tree
 	})
-	accountTree, err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(mimc.NewMiMC()),
+	accountTree, err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(poseidon.NewPoseidon()),
 		SetNamespace(ctx, AccountPrefix), AccountTreeHeight, NilAccountNodeHash,
 		opts...)
 	if err != nil {
@@ -256,6 +256,6 @@ func AccountToNode(
 }
 
 func NewMemAccountAssetTree() (tree bsmt.SparseMerkleTree, err error) {
-	return bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(mimc.NewMiMC()),
+	return bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(poseidon.NewPoseidon()),
 		memory.NewMemoryDB(), AssetTreeHeight, NilAccountAssetNodeHash)
 }
