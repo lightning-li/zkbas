@@ -116,11 +116,7 @@ func (c *Fullnode) Run() {
 				}
 			}
 
-			if c.bc.Statedb.StateRoot != l2Block.StateRoot {
-				panic(fmt.Sprintf("state root not matched between statedb and l2block: %d", l2Block.Height))
-			}
-
-			curBlock, err = c.processNewBlock(curBlock, int(l2Block.Size))
+			curBlock, err = c.processNewBlock(curBlock, int(l2Block.Size), l2Block.StateRoot)
 			if err != nil {
 				panic(fmt.Sprintf("new block failed, block height: %d, Error: %s", l2Block.Height, err.Error()))
 			}
@@ -138,10 +134,18 @@ func (c *Fullnode) Shutdown() {
 	c.bc.ChainDB.Close()
 }
 
-func (c *Fullnode) processNewBlock(curBlock *block.Block, blockSize int) (*block.Block, error) {
+func (c *Fullnode) processNewBlock(curBlock *block.Block, blockSize int, stateRoot string) (*block.Block, error) {
 	blockStates, err := c.bc.CommitNewBlock(blockSize, curBlock.CreatedAt.UnixMilli())
 	if err != nil {
 		return nil, err
+	}
+	err = c.bc.Statedb.SyncPendingGasAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	if c.bc.Statedb.StateRoot != stateRoot {
+		fmt.Sprintf("state root not matched between statedb and l2block: %d", curBlock.BlockHeight)
 	}
 	blockStates.Block.BlockStatus = c.config.SyncBlockStatus
 
