@@ -11,30 +11,32 @@
 DEPLOY_PATH=~/zkbnb-deploy
 KEY_PATH=~/.zkbnb
 ZkBNB_REPO_PATH=$(cd `dirname $0`; pwd)
-CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
+CMC_TOKEN=4b35dca9-c640-4e8b-8442-03e8da57a31e
 NETWORK_RPC_SYS_CONFIG_NAME=LocalTestNetworkRpc # BscTestNetworkRpc or LocalTestNetworkRpc
 BSC_TESTNET_RPC=HTTP://127.0.0.1:8545
-BSC_TESTNET_PRIVATE_KEY=2d92239525b6632b963f49d28411596512fab69052a1738e530a59617e433b81
+BSC_TESTNET_PRIVATE_KEY=1522fef5e3d49d61f1aeb0c86e3b9ff9e0dc2a474191e52fe197d08f6ec18fb9
+LOCAL_RPC=HTTP://127.0.0.1:8545
+LOCAL_PRIVATE_KEY=1522fef5e3d49d61f1aeb0c86e3b9ff9e0dc2a474191e52fe197d08f6ec18fb9
 #use COMMIT_BLOCK_PRIVATE_KEY for submitting commit_block to bnb contract in sender application
 #use VERIFY_BLOCK_PRIVATE_KEY for submitting verify_block to bnb contract in sender application
-COMMIT_BLOCK_PRIVATE_KEY=
-VERIFY_BLOCK_PRIVATE_KEY=
+COMMIT_BLOCK_PRIVATE_KEY=020877ecb26d0de9e6d137f409626ffbfcffa8a48166e88ac4b555b71c1048a6
+VERIFY_BLOCK_PRIVATE_KEY=625a62c85c552a86d896b51ac82cf3062f25e9bf915c0ccd3982bf20e9294e31
 # security Council Members for upgrade approve
 # FOR TEST
 # generage by Mnemonic (account #17 ~ #19): giggle federal note disorder will close traffic air melody artefact taxi tissue
-SECURITY_COUNCIL_MEMBERS_NUMBER_1=0x0000000000000000000000000000000000000000
-SECURITY_COUNCIL_MEMBERS_NUMBER_2=0x0000000000000000000000000000000000000000
-SECURITY_COUNCIL_MEMBERS_NUMBER_3=0x0000000000000000000000000000000000000000
+SECURITY_COUNCIL_MEMBERS_NUMBER_1=0x07442a5e149a06fED892F1C1df55E92C2361dd7b
+SECURITY_COUNCIL_MEMBERS_NUMBER_2=0x53191C09816DeBAc435176c23652d57438F46865
+SECURITY_COUNCIL_MEMBERS_NUMBER_3=0x6bc887D23464AFE01cb8dA3DC429F0bAE2a4e1b1
 # validator config, split by `,` the address of COMMIT_BLOCK_PRIVATE_KEY  and the address of VERIFY_BLOCK_PRIVATE_KEY,
-VALIDATORS=
+VALIDATORS=0x53191C09816DeBAc435176c23652d57438F46865,0x6bc887D23464AFE01cb8dA3DC429F0bAE2a4e1b1
 # treasury account address, the default value is the first validator's address
 TREASURY_ACCOUNT_ADDRESS=
 # gas account address, the default value is the second validator's address
 GAS_ACCOUNT_ADDRESS=
 # commit  address, the default value is commit to bnb contract address
-COMMIT_ADDRESS=
+COMMIT_ADDRESS=0x53191C09816DeBAc435176c23652d57438F46865
 # verify  address, the default value is verify to bnb contract address
-VERIFY_ADDRESS=
+VERIFY_ADDRESS=0x6bc887D23464AFE01cb8dA3DC429F0bAE2a4e1b1
 
 ZKBNB_OPTIONAL_BLOCK_SIZES=1,10
 ZKBNB_R1CS_BATCH_SIZE=100000
@@ -57,33 +59,26 @@ export PATH=$PATH:/usr/local/go/bin/
 cd ~
 rm -rf ${DEPLOY_PATH}-bak && mv ${DEPLOY_PATH} ${DEPLOY_PATH}-bak
 mkdir -p ${DEPLOY_PATH} && cd ${DEPLOY_PATH}
-git clone --branch qa https://github.com/bnb-chain/zkbnb-contract.git
-git clone --branch testnet https://github.com/bnb-chain/zkbnb-crypto.git
+git clone --branch fix_desert_exit https://github.com/lightning-li/zkbnb-contract.git
+git clone --branch fix_desert_exit  https://github.com/lightning-li/zkbnb-crypto.git
 cp -r ${ZkBNB_REPO_PATH} ${DEPLOY_PATH}
 
 
 flag=$1
 if [ $flag = "new" ]; then
   echo "new crypto env"
-  echo '2-1. start generate zkbnb.vk and zkbnb.pk'
+  echo '2. start generate zkbnb.vk and zkbnb.pk'
   cd ${DEPLOY_PATH}
   cd zkbnb-crypto && go test ./circuit/solidity -timeout 99999s -run TestExportSol -blocksizes=${ZKBNB_OPTIONAL_BLOCK_SIZES} -batchsize=${ZKBNB_R1CS_BATCH_SIZE}
+  go test ./circuit/solidity -timeout 99999s -run TestExportDesertSol
   cd ${DEPLOY_PATH}
   mkdir -p $KEY_PATH
   cp -r ./zkbnb-crypto/circuit/solidity/* $KEY_PATH
-
-  echo '2-2 start generate zkbnb.desert.vk and zkbnb.desert.pk'
-  cd ${DEPLOY_PATH}
-  cd zkbnb-crypto && go test ./circuit/solidity -timeout 99999s -run TestExportDesertSol
-  cd ${DEPLOY_PATH}
-  mkdir -p $KEY_PATH
-  cp -r ./zkbnb-crypto/circuit/solidity/* $KEY_PATH
-
 fi
 
 
 
-echo '3-1. start verify_parse for ZkBNBVerifier'
+echo '3. start verify_parse for ZkBNBVerifier'
 cd ${DEPLOY_PATH}/zkbnb/service/prover/
 contracts=()
 keys=()
@@ -96,12 +91,7 @@ done
 VERIFIER_CONTRACTS=$(echo "${contracts[*]}" | tr ' ' ',')
 PROVING_KEYS=$(echo "${keys[*]}" | tr ' ' ',')
 python3 verifier_parse.py ${VERIFIER_CONTRACTS} ${ZKBNB_OPTIONAL_BLOCK_SIZES} ${DEPLOY_PATH}/zkbnb-contract/contracts/ZkBNBVerifier.sol
-
-echo '3-2 start verify_parse for DesertVerifier'
-cd ${DEPLOY_PATH}/zkbnb/service/prover/
-
-python3 desert_verifier_parse.py ${KEY_PATH}/DesertVerifier1.sol  ${DEPLOY_PATH}/zkbnb-contract/contracts/DesertVerifier.sol
-
+python3 desert_verifier_parse.py ${KEY_PATH}/DesertVerifier1.sol ${DEPLOY_PATH}/zkbnb-contract/contracts/DesertVerifier.sol
 
 echo '4-1. get latest block number'
 hexNumber=`curl -X POST ${BSC_TESTNET_RPC} --header 'Content-Type: application/json' --data-raw '{"jsonrpc":"2.0", "method":"eth_blockNumber", "params": [], "id":1 }' | jq -r '.result'`
@@ -116,6 +106,8 @@ cd ./zkbnb-contract
 cp -r .env.example .env
 sed -i -e "s~BSC_TESTNET_RPC=.*~BSC_TESTNET_RPC=${BSC_TESTNET_RPC}~" .env
 sed -i -e "s/BSC_TESTNET_PRIVATE_KEY=.*/BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}/" .env
+sed -i -e "s~LOCAL_RPC=.*~LOCAL_RPC=${LOCAL_RPC}~" .env
+sed -i -e "s/LOCAL_PRIVATE_KEY=.*/LOCAL_PRIVATE_KEY=${LOCAL_PRIVATE_KEY}/" .env
 sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_1=.*/SECURITY_COUNCIL_MEMBERS_NUMBER_1=${SECURITY_COUNCIL_MEMBERS_NUMBER_1}/" .env
 sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_2=.*/SECURITY_COUNCIL_MEMBERS_NUMBER_2=${SECURITY_COUNCIL_MEMBERS_NUMBER_2}/" .env
 sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_3=.*/SECURITY_COUNCIL_MEMBERS_NUMBER_3=${SECURITY_COUNCIL_MEMBERS_NUMBER_3}/" .env
@@ -123,11 +115,11 @@ sed -i -e "s/VALIDATORS=.*/VALIDATORS=${VALIDATORS}/" .env
 sed -i -e "s/TREASURY_ACCOUNT_ADDRESS=.*/TREASURY_ACCOUNT_ADDRESS=${TREASURY_ACCOUNT_ADDRESS}/" .env
 sed -i -e "s/GAS_ACCOUNT_ADDRESS=.*/GAS_ACCOUNT_ADDRESS=${GAS_ACCOUNT_ADDRESS}/" .env
 yarn install
-npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
+npx hardhat --network local run ./scripts/deploy-keccak256/deploy.js
 echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json'
 
-npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/register.js
-npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deposit.js
+npx hardhat --network local run ./scripts/deploy-keccak256/register.js
+npx hardhat --network local run ./scripts/deploy-keccak256/deposit.js
 
 
 echo '5. modify deployed contracts into zkbnb config'
@@ -269,8 +261,11 @@ CacheRedis:
 BlockConfig:
   OptionalBlockSizes: [${ZKBNB_OPTIONAL_BLOCK_SIZES}]
 
+DbBatchSize: 10
+EnableRollback: true
+
 IpfsUrl:
-  10.23.23.40:5001
+  127.0.0.1:5001
 
 TreeDB:
   Driver: memorydb
@@ -368,7 +363,7 @@ Apollo:
   IsBackupConfig:    true
 
 IpfsUrl:
-  10.23.23.40:5001
+  127.0.0.1:5001
 
 CoinMarketCap:
   Url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=

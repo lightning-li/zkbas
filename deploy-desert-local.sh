@@ -15,7 +15,7 @@ echo 'start install'
 ZKBNB_CONTAINERS=$(docker ps -a |grep zkbnb-desert|awk '{print $1}')
 [[ -z "${ZKBNB_CONTAINERS}" ]] || docker rm -f ${ZKBNB_CONTAINERS}
 docker run -d --name zkbnb-desert-kvrocks -p 6666:6666 apache/kvrocks
-docker run -d --name zkbnb-desert-postgres -p 5432:5432 \
+docker run -d --name zkbnb-desert-postgres -p 5434:5432 \
   -e PGDATA=/var/lib/postgresql/pgdata  \
   -e POSTGRES_PASSWORD=ZkBNB@123 \
   -e POSTGRES_USER=postgres \
@@ -36,7 +36,7 @@ echo "
 Name: desertexit
 
 Postgres:
-  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb_desert port=5432 sslmode=disable
+  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb_desert port=5434 sslmode=disable
   LogLevel: 4
 
 ChainConfig:
@@ -49,8 +49,8 @@ ChainConfig:
 
   StartL1BlockHeight: 1
   BscTestNetRpc: http://127.0.0.1:8545
-  ZkBnbContractAddress: 0xF170394283cDf43C5A0900Ef6A3af2886108eFa3
-  GovernanceContractAddress: 0xE48fC034056eac15F9063b502d08f5968A90E694
+  ZkBnbContractAddress: 0xA22aF4928B6eFfD757C0caf2109f6bFD1bF36109
+  GovernanceContractAddress: 0xbFC91670c863393601Abf76C9cafdf5278bBAccA
 
 TreeDB:
   Driver: redis
@@ -71,7 +71,7 @@ CacheConfig:
   NftCacheSize: 10000000
   MemCacheSize: 1000000
 
-KeyPath: /Users/user/.zkbnb/zkbnb.desert1
+KeyPath: /Users/likang/.zkbnb/zkbnb.desert1
 
   " > ${ZkBNB_REPO_PATH}/tools/desertexit/etc/config.yaml
 
